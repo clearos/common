@@ -1,1 +1,1 @@
-# common
+# Common Makefile
