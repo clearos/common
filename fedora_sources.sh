@@ -61,7 +61,7 @@ while read -r fsha fname ; do
     fi
     if [ ! -e "${fname}" ]; then
       [ -z "${fsha}" ] && continue
-      curl -f "http://pkgs.fedoraproject.org/repo/pkgs/${pn}/${fname}/${fsha}/${fname}" -o "${fname}" && break
+      curl -f "http://pkgs.fedoraproject.org/repo/pkgs/${pn}/${fname}/${fsha}/${fname}" -o "${fname}"
     else
       echo "${fname} exists. skipping"
     fi
