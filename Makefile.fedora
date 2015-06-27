@@ -1,6 +1,6 @@
-SPECFILE = $(firstword $(wildcard SPECS/*.spec))
+SPECFILE = $(firstword $(wildcard *.spec))
 
-RPM_DEFINES := --define "_sourcedir $(WORKDIR)/SOURCES" \
+RPM_DEFINES := --define "_sourcedir $(WORKDIR)" \
 		--define "_specdir $(WORKDIR)" \
 		--define "_builddir $(WORKDIR)" \
 		--define "_srcrpmdir $(WORKDIR)" \
@@ -15,7 +15,7 @@ endif
 .PHONY: sources srpm
 
 sources:
-	@../common/centos_sources.sh
+	@../common/fedora_sources.sh
 
 srpm: $(SOURCE_RPM)
 	@$(RPM_WITH_DIRS) --nodeps -bs $(SPECFILE)
