@@ -1,42 +1,16 @@
 WORKDIR := $(shell pwd)
 
-SPECFILE = $(firstword $(wildcard SPECS/*.spec))
+METADATA = $(firstword $(wildcard .*.metadata))
+APP_SPEC = $(firstword $(wildcard packaging/*.spec))
+SPECS_SPEC = $(firstword $(wildcard SPECS/*.spec))
+SIMPLE_SPEC = $(firstword $(wildcard *.spec))
 
-RPM_DEFINES := --define "_sourcedir $(WORKDIR)" \
-		--define "_specdir $(WORKDIR)" \
-		--define "_builddir $(WORKDIR)" \
-		--define "_srcrpmdir $(WORKDIR)" \
-		--define "_rpmdir $(WORKDIR)"
+define find-correct-makefile
+if [ -f "$(METADATA)" ]; then echo "../common/Makefile.centos"; elif [ -f "$(APP_SPEC)" ]; then echo "../common/Makefile.app"; elif [ -f "$(SIMPLE_SPEC)" ]; then if grep -q '^Source:\s*.\+\.tar\.gz' $(SIMPLE_SPEC); then echo "../common/Makefile.simple"; fi; fi
+endef
 
-RPM_WITH_DIRS = rpmbuild $(RPM_DEFINES)
-QUERY_FORMAT = $(shell sed -n 's/^Source:\s*\(.*\).tar.gz/\1/ip' $(SPECFILE) | head -1)
-NAME_VER = $(shell rpm $(RPM_DEFINES) -q --qf "$(QUERY_FORMAT)\n" --specfile $(SPECFILE)| head -1)
-SOURCE_RPM = $(shell rpm $(RPM_DEFINES) -q --qf "%{NAME}-%{VERSION}-%{RELEASE}.src.rpm\n" --specfile $(SPECFILE)| head -1)
+MAKEFILE_EXTRA := $(shell $(find-correct-makefile))
 
-ifeq ($(SPECFILE),)
-$(error "No spec file found for $(NAME)")
+ifneq ($(MAKEFILE_EXTRA),)
+include $(MAKEFILE_EXTRA)
 endif
-
-ifeq ($(NAME_VER),)
-$(error "$(SPECFILE) doesn't contain valid source")
-endif
-
-ifeq ($(SOURCE_RPM),)
-$(error "$(SPECFILE) doesn't produce a source rpm")
-endif
-
-ifneq ($(wildcard $(NAME_VER)),)
-$(error "$(NAME_VER) directory already exists")
-endif
-
-.PHONY: sources srpm $(SOURCE_RPM) $(NAME_VER)
-
-$(NAME_VER).tar.gz:
-	@git archive --format tar.gz --prefix $(NAME_VER)/ --output $(NAME_VER).tar.gz HEAD
-
-sources: $(NAME_VER).tar.gz
-
-$(SOURCE_RPM): $(NAME_VER).tar.gz
-	@$(RPM_WITH_DIRS) --nodeps -bs $(SPECFILE)
-
-srpm: $(SOURCE_RPM)
