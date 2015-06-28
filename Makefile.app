@@ -7,7 +7,7 @@ RPM_DEFINES := --define "_sourcedir $(WORKDIR)" \
 		--define "_rpmdir $(WORKDIR)"
 
 RPM_WITH_DIRS = rpmbuild $(RPM_DEFINES)
-QUERY_FORMAT = $(shell sed -n 's/^Source:\s*\(.*\).tar.gz/\1/ip' $(SPECFILE) | head -1)
+QUERY_FORMAT = $(shell sed -n 's/^Source0\?:\s*\(.*\/\)\?\(.*\).tar.gz/\2/ip' $(SPECFILE) | head -1)
 NAME_VER = $(shell rpm $(RPM_DEFINES) -q --qf "$(QUERY_FORMAT)\n" --specfile $(SPECFILE)| head -1)
 SOURCE_RPM = $(shell rpm $(RPM_DEFINES) -q --qf "%{NAME}-%{VERSION}-%{RELEASE}.src.rpm\n" --specfile $(SPECFILE)| head -1)
 
