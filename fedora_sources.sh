@@ -50,6 +50,8 @@ then
 fi
 pn=$1
 pn=${pn%.spec}
+# Remove webconfig from front of package name
+pn=${pn#webconfig-}
 
 if [ ! -d .git ]; then
   echo 'You need to run this from inside a sources git repo' >&2
