@@ -36,7 +36,20 @@ then
     echo 'Missing sources. Please run from inside a sources git repo' >&2
     exit 1
 fi
-pn=${PWD##*/}
+
+# check metadata file and extract package name
+shopt -s nullglob
+set -- *.spec
+if (( $# == 0 ))
+then
+    echo 'Missing SPEC file. Please run from inside a sources git repo' >&2
+    exit 1
+elif (( $# > 1 ))
+then
+    echo "Warning: multiple SPEC files found. Using $1"
+fi
+pn=$1
+pn=${pn%.spec}
 
 if [ ! -d .git ]; then
   echo 'You need to run this from inside a sources git repo' >&2
@@ -60,8 +73,11 @@ while read -r fsha fname ; do
       fi
     fi
     if [ ! -e "${fname}" ]; then
-      [ -z "${fsha}" ] && continue
-      curl -f "http://pkgs.fedoraproject.org/repo/pkgs/${pn}/${fname}/${fsha}/${fname}" -o "${fname}"
+      for furl in "${fsha}/${fname}" "${hashType%sum}/${fsha}/${fname}"
+      do
+        [ -z "${fsha}" ] && continue
+        curl -f "http://pkgs.fedoraproject.org/repo/pkgs/${pn}/${fname}/${furl}" -o "${fname}" && break
+      done
     else
       echo "${fname} exists. skipping"
     fi
