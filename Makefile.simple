@@ -34,8 +34,8 @@ endif
 $(NAME_VER).tar.gz:
 	@git archive --format tar --prefix $(NAME_VER)/ --output $(NAME_VER).tar HEAD
 	@git submodule --quiet update --init
-	@git submodule --quiet foreach 'git archive --format tar --prefix $(NAME_VER)/$$path/ --output $$name.tar $$sha1'
-	@git submodule --quiet foreach 'tar -Af $$toplevel/$(NAME_VER).tar $$name.tar'
+	@git submodule --quiet foreach 'git archive --format tar --prefix $(NAME_VER)/$$path/ --output $$toplevel/$$name.tar $$sha1'
+	@git submodule --quiet foreach 'tar -Af $$toplevel/$(NAME_VER).tar $$toplevel/$$name.tar'
 	@gzip -9 $(NAME_VER).tar
 
 sources: $(NAME_VER).tar.gz
