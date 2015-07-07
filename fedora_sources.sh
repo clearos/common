@@ -30,7 +30,6 @@ weakHashDetection () {
 }
 
 # check sources file and extract package name
-ls
 if [ ! -f sources ]
 then
     echo 'Missing sources. Please run from inside a sources git repo' >&2
