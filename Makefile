@@ -14,3 +14,6 @@ MAKEFILE_EXTRA := $(shell $(find-correct-makefile))
 ifneq ($(MAKEFILE_EXTRA),)
 include $(MAKEFILE_EXTRA)
 endif
+
+clean:
+	@git ls-files -oi --exclude-standard | grep -xv Makefile | xargs -r rm -v
