@@ -30,7 +30,6 @@ weakHashDetection () {
 }
 
 # check sources-clearos file and extract package name
-ls
 if [ ! -f sources-clearos ]
 then
     echo 'Missing sources-clearos. Please run from inside a sources git repo' >&2
