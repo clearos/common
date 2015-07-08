@@ -1,21 +1,5 @@
 SPECFILE = $(firstword $(wildcard SPECS/*.spec))
-
-RPM_DEFINES := --define "_sourcedir $(WORKDIR)/SOURCES" \
-		--define "_specdir $(WORKDIR)" \
-		--define "_builddir $(WORKDIR)" \
-		--define "_srcrpmdir $(WORKDIR)" \
-		--define "_rpmdir $(WORKDIR)"
-
-RPM_WITH_DIRS = rpmbuild $(RPM_DEFINES)
-
-ifeq ($(SPECFILE),)
-$(error "No spec file found for $(NAME)")
-endif
-
-.PHONY: sources srpm
+SOURCEDIR = $(WORKDIR)/SOURCES
 
 sources:
 	@../common/centos_sources.sh
-
-srpm: $(SOURCE_RPM)
-	@$(RPM_WITH_DIRS) --nodeps -bs $(SPECFILE)

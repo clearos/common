@@ -1,21 +1,2 @@
-SPECFILE = $(firstword $(wildcard *.spec))
-
-RPM_DEFINES := --define "_sourcedir $(WORKDIR)" \
-		--define "_specdir $(WORKDIR)" \
-		--define "_builddir $(WORKDIR)" \
-		--define "_srcrpmdir $(WORKDIR)" \
-		--define "_rpmdir $(WORKDIR)"
-
-RPM_WITH_DIRS = rpmbuild $(RPM_DEFINES)
-
-ifeq ($(SPECFILE),)
-$(error "No spec file found for $(NAME)")
-endif
-
-.PHONY: sources srpm
-
 sources:
 	@../common/fedora_sources.sh
-
-srpm: $(SOURCE_RPM)
-	@$(RPM_WITH_DIRS) --nodeps -bs $(SPECFILE)
