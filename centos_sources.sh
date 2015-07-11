@@ -62,8 +62,9 @@ while IFS='' read -r line
 do
   # input from: git branch --contains HEAD
   branch="${line:2}"
-  # switch clear to c
+  # switch clear/infra to c
   branch="${branch/clear/c}"
+  branch="${branch/infra/c}"
   if [[ "$branch" =~ "detached from" ]]
   then
     # ignore detached heads
