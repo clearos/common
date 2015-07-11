@@ -3,4 +3,4 @@ sources:
 	@git submodule --quiet update --init
 	@git submodule --quiet foreach 'git archive --prefix $(NAME)-$(VERSION)/$$path/ --output $$toplevel/$$name.tar $$sha1'
 	@git submodule --quiet foreach 'tar -Af $$toplevel/$(NAME)-$(VERSION).tar $$toplevel/$$name.tar'
-	@gzip -9 $(NAME)-$(VERSION).tar
+	@gzip -f9 $(NAME)-$(VERSION).tar
