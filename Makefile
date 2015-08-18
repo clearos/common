@@ -49,6 +49,9 @@ endif
 ifndef RELEASE
 RELEASE := $(shell rpm $(RPM_DEFINES) $(DIST_DEFINES) -q --qf "%{RELEASE}\n" --specfile $(SPECFILE)| head -1)
 endif
+# this is used in make patch, maybe make clean eventually.
+# would be nicer to autodetermine from the spec file...
+RPM_BUILD_DIR ?= $(BUILDDIR)/$(NAME)-$(VERSION)
 
 ## Override RPM_WITH_DIRS to avoid the usage of these variables.
 ifndef SRCRPMDIR
@@ -83,12 +86,10 @@ RPM_WITH_DIRS = $(RPM) --define "_sourcedir $(SOURCEDIR)" \
 	               --define "_rpmdir $(RPMDIR)"
 endif
 
-# tag to export, defaulting to current tag in the spec file
-ifndef TAG
-TAG=$(NAME)-$(VERSION)-$(RELEASE)
-endif
+.PHONY: default all sources clean srpm rpm log prep patch rediff gimmespec help
 
-.PHONY: default all clean sources srpm rpm log
+# default target: just make sure we've got the sources
+all: sources
 
 clean:
 	@git clean -ndx | sed -e 's,Would remove ,,' -e '/^Makefile$$/d' | xargs -r rm -rf
@@ -100,5 +101,45 @@ rpm: sources
 	@$(RPM_WITH_DIRS) $(DIST_DEFINES) -bb $(SPECFILE)
 
 log:
-	@(LC_ALL=C date +"* %a %b %e %Y `git config --get user.name` <`git config --get user.email`> - VERSION"; git log --pretty="format:- %s (%an)" | cat) | less
+	@(LC_ALL=C date +"* %a %b %e %Y `git config --get user.name` <`git config --get user.email`> - $(VERSION)-$(RELEASE)"; git log --pretty="format:- %s (%an)" | cat) | less
+
+prep: sources
+	$(RPM_WITH_DIRS) --nodeps -bp $(SPECFILE)
+
+ifdef CVE
+PATCHFILE := $(NAME)-$(VERSION)-CVE-$(CVE).patch
+SUFFIX := cve$(shell echo $(CVE) | sed s/.*-//)
+else
+PATCHFILE := $(NAME)-$(VERSION)-$(SUFFIX).patch
+endif
+
+patch:
+	@if test -z "$(SUFFIX)"; then echo "Must specify SUFFIX=whatever" ; exit 1; fi
+	(cd $(RPM_BUILD_DIR)/.. && gendiff $(NAME)-$(VERSION) .$(SUFFIX) | filterdiff --remove-timestamps) > $(PATCHFILE) || true
+	@if ! test -s $(PATCHFILE); then echo "Patch is empty!"; exit 1; fi
+	@echo "Created $(PATCHFILE)"
+	@git add $(PATCHFILE) || true
+
+rediff:
+	@if test -z "$(SUFFIX)"; then echo "Must specify SUFFIX=whatever" ; exit 1; fi
+	@if ! test -f "$(PATCHFILE)"; then echo "$(PATCHFILE) not found"; exit 1; fi
+	@mv -f $(PATCHFILE) $(PATCHFILE)\~
+	@sed '/^--- /,$$d' < $(PATCHFILE)\~ > $(PATCHFILE)
+	@(cd $(RPM_BUILD_DIR)/.. && gendiff $(NAME)-$(VERSION) .$(SUFFIX) | filterdiff --remove-timestamps) >> $(PATCHFILE) || true
+
+gimmespec:
+	@echo "$(SPECFILE)"
+
+help:
+	@echo "Usage: make <target>"
+	@echo "Available targets are:"
+	@echo " help                    Show this text"
+	@echo " sources                 Download source files [default]"
+	@echo " prep                    Local test rpmbuild prep"
+	@echo " srpm                    Create a srpm"
+	@echo " log                     Display possible changelog entry"
+	@echo " clean                   Remove untracked files"
+	@echo " patch SUFFIX=<suff>     Create and add a gendiff patch file"
+	@echo " rediff SUFFIX=<suff>    Recreates a gendiff patch file, retaining comments"
+	@echo " gimmespec               Print the name of the specfile"
 
