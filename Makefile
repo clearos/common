@@ -27,27 +27,6 @@ ifeq ($(SPECFILE),)
 $(error "No spec file found")
 endif 
 
-SOURCE_RPM = $(shell rpm $(RPM_DEFINES) -q --qf "%{NAME}-%{VERSION}-%{RELEASE}.src.rpm\n" --specfile $(SPECFILE)| head -1)
-ifeq ($(SOURCE_RPM),)
-$(error "$(SPECFILE) doesn't produce a source rpm")
-endif
-
-# the version of the package
-ifndef NAME
-NAME := $(shell rpm $(RPM_DEFINES) $(DIST_DEFINES) -q --qf "%{NAME}\n" --specfile $(SPECFILE)| head -1)
-endif
-# the version of the package
-ifndef VERSION
-VERSION := $(shell rpm $(RPM_DEFINES) $(DIST_DEFINES) -q --qf "%{VERSION}\n" --specfile $(SPECFILE)| head -1)
-endif
-# the release of the package
-ifndef RELEASE
-RELEASE := $(shell rpm $(RPM_DEFINES) $(DIST_DEFINES) -q --qf "%{RELEASE}\n" --specfile $(SPECFILE)| head -1)
-endif
-# this is used in make patch, maybe make clean eventually.
-# would be nicer to autodetermine from the spec file...
-RPM_BUILD_DIR ?= $(BUILDDIR)/$(NAME)-$(VERSION)
-
 ## Override RPM_WITH_DIRS to avoid the usage of these variables.
 ifndef SRCRPMDIR
 SRCRPMDIR = $(WORKDIR)
@@ -77,6 +56,27 @@ RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
 		--define "_rpmdir $(RPMDIR)" \
                 $(DIST_DEFINES)
 endif
+
+SOURCE_RPM = $(shell rpm $(RPM_DEFINES) -q --qf "%{NAME}-%{VERSION}-%{RELEASE}.src.rpm\n" --specfile $(SPECFILE)| head -1)
+ifeq ($(SOURCE_RPM),)
+$(error "$(SPECFILE) doesn't produce a source rpm")
+endif
+
+# the version of the package
+ifndef NAME
+NAME := $(shell rpm $(RPM_DEFINES) -q --qf "%{NAME}\n" --specfile $(SPECFILE)| head -1)
+endif
+# the version of the package
+ifndef VERSION
+VERSION := $(shell rpm $(RPM_DEFINES) -q --qf "%{VERSION}\n" --specfile $(SPECFILE)| head -1)
+endif
+# the release of the package
+ifndef RELEASE
+RELEASE := $(shell rpm $(RPM_DEFINES) -q --qf "%{RELEASE}\n" --specfile $(SPECFILE)| head -1)
+endif
+# this is used in make patch, maybe make clean eventually.
+# would be nicer to autodetermine from the spec file...
+RPM_BUILD_DIR ?= $(BUILDDIR)/$(NAME)-$(VERSION)
 
 LOCALARCH := $(if $(shell grep -i '^BuildArch:.*noarch' $(SPECFILE)), noarch, $(shell uname -m))
 
@@ -172,8 +172,8 @@ install-short: sources $(TARGETS)
 help:
 	@echo "Usage: make <target>"
 	@echo "Available targets are:"
-	@echo " help                    Show this text"
-	@echo " sources                 Download source files [default]"
+	@echo "	help                    Show this text"
+	@echo "	sources                 Download source files [default]"
 	@echo "	<arch>			Local test rpmbuild binary"
 	@echo "	local			Local test rpmbuild binary"
 	@echo "	prep			Local test rpmbuild prep"
@@ -181,11 +181,11 @@ help:
 	@echo "	install			Local test rpmbuild install"
 	@echo "	compile-short		Local test rpmbuild short-circuit compile"
 	@echo "	install-short		Local test rpmbuild short-circuit install"
-	@echo " srpm                    Create a srpm"
+	@echo "	srpm                    Create a srpm"
 	@echo "	verrel			Echo \"$(NAME)-$(VERSION)-$(RELEASE)\""
-	@echo " log                     Display possible changelog entry"
-	@echo " clean                   Remove untracked files"
-	@echo " patch SUFFIX=<suff>     Create and add a gendiff patch file"
-	@echo " rediff SUFFIX=<suff>    Recreates a gendiff patch file, retaining comments"
-	@echo " gimmespec               Print the name of the specfile"
+	@echo "	log                     Display possible changelog entry"
+	@echo "	clean                   Remove untracked files"
+	@echo "	patch SUFFIX=<suff>     Create and add a gendiff patch file"
+	@echo "	rediff SUFFIX=<suff>    Recreates a gendiff patch file, retaining comments"
+	@echo "	gimmespec               Print the name of the specfile"
 
