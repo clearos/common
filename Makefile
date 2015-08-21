@@ -4,11 +4,6 @@ ifndef WORKDIR
 WORKDIR := $(shell pwd)
 endif
 
-default: all
-
-all:
-	@echo "Nothing to do"
-
 ## Files used to determine which Makefile to include
 METADATA = $(firstword $(wildcard .*.metadata))
 APP_SPEC = $(firstword $(wildcard packaging/*.spec))
@@ -75,18 +70,32 @@ ifdef DIST
 DIST_DEFINES := --define "dist $(DIST)"
 endif
 
+ifndef RPM_DEFINES
+RPM_DEFINES := --define "_sourcedir $(SOURCEDIR)" \
+		--define "_builddir $(BUILDDIR)" \
+		--define "_srcrpmdir $(SRCRPMDIR)" \
+		--define "_rpmdir $(RPMDIR)" \
+                $(DIST_DEFINES)
+endif
+
+LOCALARCH := $(if $(shell grep -i '^BuildArch:.*noarch' $(SPECFILE)), noarch, $(shell uname -m))
+
 # RPM with all the overrides in place;
 ifndef RPM
 RPM := $(shell if test -f /usr/bin/rpmbuild ; then echo rpmbuild ; else echo rpm ; fi)
 endif
 ifndef RPM_WITH_DIRS
-RPM_WITH_DIRS = $(RPM) --define "_sourcedir $(SOURCEDIR)" \
-	               --define "_builddir $(BUILDDIR)" \
-	               --define "_srcrpmdir $(SRCRPMDIR)" \
-	               --define "_rpmdir $(RPMDIR)"
+RPM_WITH_DIRS = $(RPM) $(RPM_DEFINES)
 endif
 
-.PHONY: default all sources clean srpm rpm log prep patch rediff gimmespec help
+# list the possible targets for valid arches
+ARCHES = noarch i386 i586 i686 x86_64
+
+# for the modules that do different "make prep" depending on what arch we build for
+PREP_ARCHES = $(addprefix prep-,$(ARCHES))
+
+## list all our bogus targets
+.PHONY :: $(ARCHES) $(PREP_ARCHES) all clean gimmespec verrel sources prep patch rediff log srpm local compile install install-short compile-short help
 
 # default target: just make sure we've got the sources
 all: sources
@@ -94,17 +103,24 @@ all: sources
 clean:
 	@git clean -ndx | sed -e 's,Would remove ,,' -e '/^Makefile$$/d' | xargs -r rm -rf
 
-srpm: sources
-	@$(RPM_WITH_DIRS) $(DIST_DEFINES) -bs $(SPECFILE)
+gimmespec:
+	@echo "$(SPECFILE)"
 
-rpm: sources
-	@$(RPM_WITH_DIRS) $(DIST_DEFINES) -bb $(SPECFILE)
+verrel:
+	@echo $(NAME)-$(VERSION)-$(RELEASE)
 
-log:
-	@(LC_ALL=C date +"* %a %b %e %Y `git config --get user.name` <`git config --get user.email`> - $(VERSION)-$(RELEASE)"; git log --pretty="format:- %s (%an)" | cat) | less
-
+# attempt to apply all the patches, optionally only for a particular arch
+ifdef PREPARCH
+prep: sources
+	$(RPM_WITH_DIRS) --nodeps -bp --target $(PREPARCH) $(SPECFILE)
+else
 prep: sources
 	$(RPM_WITH_DIRS) --nodeps -bp $(SPECFILE)
+endif
+
+# this allows for make prep-i686, make prep-ppc64, etc
+prep-%:
+	$(MAKE) prep PREPARCH=$*
 
 ifdef CVE
 PATCHFILE := $(NAME)-$(VERSION)-CVE-$(CVE).patch
@@ -127,16 +143,46 @@ rediff:
 	@sed '/^--- /,$$d' < $(PATCHFILE)\~ > $(PATCHFILE)
 	@(cd $(RPM_BUILD_DIR)/.. && gendiff $(NAME)-$(VERSION) .$(SUFFIX) | filterdiff --remove-timestamps) >> $(PATCHFILE) || true
 
-gimmespec:
-	@echo "$(SPECFILE)"
+log:
+	@(LC_ALL=C date +"* %a %b %e %Y `git config --get user.name` <`git config --get user.email`> - $(VERSION)-$(RELEASE)"; git log --pretty="format:- %s (%an)" | cat) | less
+
+srpm: sources
+	@$(RPM_WITH_DIRS) -bs $(SPECFILE)
+
+# build whatever's appropriate for the local architecture
+local: $(LOCALARCH)
+
+# build for a particular arch
+$(ARCHES) : sources
+	$(RPM_WITH_DIRS) --target $@ -ba $(SPECFILE) 2>&1 | tee .build-$(VERSION)-$(RELEASE).log ; exit $${PIPESTATUS[0]}
+
+compile: sources $(TARGETS)
+	$(RPM_WITH_DIRS) -bc $(SPECFILE)
+
+install: sources $(TARGETS)
+	$(RPM_WITH_DIRS) -bi $(SPECFILE)
+
+compile-short: sources $(TARGETS)
+	$(RPM_WITH_DIRS) --nodeps --short-circuit -bc $(SPECFILE)
+
+install-short: sources $(TARGETS)
+	$(RPM_WITH_DIRS) --nodeps --short-circuit -bi $(SPECFILE)
+
 
 help:
 	@echo "Usage: make <target>"
 	@echo "Available targets are:"
 	@echo " help                    Show this text"
 	@echo " sources                 Download source files [default]"
-	@echo " prep                    Local test rpmbuild prep"
+	@echo "	<arch>			Local test rpmbuild binary"
+	@echo "	local			Local test rpmbuild binary"
+	@echo "	prep			Local test rpmbuild prep"
+	@echo "	compile			Local test rpmbuild compile"
+	@echo "	install			Local test rpmbuild install"
+	@echo "	compile-short		Local test rpmbuild short-circuit compile"
+	@echo "	install-short		Local test rpmbuild short-circuit install"
 	@echo " srpm                    Create a srpm"
+	@echo "	verrel			Echo \"$(NAME)-$(VERSION)-$(RELEASE)\""
 	@echo " log                     Display possible changelog entry"
 	@echo " clean                   Remove untracked files"
 	@echo " patch SUFFIX=<suff>     Create and add a gendiff patch file"
