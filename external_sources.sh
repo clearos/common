@@ -75,7 +75,7 @@ while read -r fsha fname furl; do
     fi
     if [ ! -e "${fname}" ]; then
       [ -z "${fsha}" ] && continue
-      curl -f "${furl}" -o "${fname}" && break
+      curl -L -f "${furl}" -o "${fname}"
     else
       echo "${fname} exists. skipping"
     fi
