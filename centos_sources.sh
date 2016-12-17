@@ -60,16 +60,13 @@ mkdir -p SOURCES
 branches=()
 while IFS='' read -r line
 do
-  # input from: git branch --contains HEAD
+  # input from: git branch --all --contains HEAD
   branch="${line:2}"
   # switch clear/infra to c
   branch="${branch/clear/c}"
   branch="${branch/infra/c}"
-  if [[ "$branch" =~ "detached from" ]]
-  then
-    # ignore detached heads
-    continue
-  fi
+  [ "$branch" = "master" ] && continue
+  [[ "$branch" =~ "detached from" ]] && continue
   if [ ".${line:0:1}" = ".*" ]
   then
     # current branch, put it first
@@ -77,7 +74,7 @@ do
   else
     branches=("${branches[@]}" "$branch")
   fi
-done <<< "$(git branch --contains HEAD)"
+done <<< "$(git branch --all --contains HEAD)"
 
 while read -r fsha fname ; do
   if [ ".${fsha}" = ".da39a3ee5e6b4b0d3255bfef95601890afd80709" ]; then
