@@ -12,7 +12,7 @@ SIMPLE_SPEC = $(firstword $(wildcard *.spec))
 
 ## Routine to return Makefile to include
 define find-correct-makefile
-if [ -f "$(METADATA)" ]; then echo "../common/Makefile.centos"; elif [ -f "$(APP_SPEC)" ]; then echo "../common/Makefile.app"; elif [ -f "$(SPECFILE)" ]; then if [ -f sources ]; then echo "../common/Makefile.fedora"; elif [ -f sources-clearos ]; then echo "../common/Makefile.clearos"; elif [ -f sources.download ]; then echo "../common/Makefile.external"; elif grep -q '^Source0\?:\s*.\+\.tar\.gz' $(SPECFILE); then echo "../common/Makefile.simple"; fi; fi
+if [ -f "$(METADATA)" ]; then echo "../common/Makefile.centos"; elif [ -f "$(APP_SPEC)" ]; then echo "../common/Makefile.app"; elif [ -f "$(SPECFILE)" ]; then if [ -f sources ]; then echo "../common/Makefile.fedora"; elif [ -f sources-clearos ]; then echo "../common/Makefile.clearos"; elif [ -f sources-clearos2 ]; then echo "../common/Makefile.clearos2"; elif [ -f sources.download ]; then echo "../common/Makefile.external"; elif grep -q '^Source0\?:\s*.\+\.tar\.gz' $(SPECFILE); then echo "../common/Makefile.simple"; fi; fi
 endef
 
 ## Actually try to find the right Makefile
