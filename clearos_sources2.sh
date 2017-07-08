@@ -57,6 +57,7 @@ if [ ! -d .git ]; then
   exit 1
 fi
 
+set -x
 while read -r fsha fname ; do
   if [ ".${fsha}" = ".da39a3ee5e6b4b0d3255bfef95601890afd80709" ]; then
     # zero byte file
@@ -75,7 +76,7 @@ while read -r fsha fname ; do
     fi
     if [ ! -e "${fname}" ]; then
       [ -z "${fsha}" ] && continue
-      curl -f "http://koji.clearos.com/plaguefiles/source/${fsha}/${fname}" -o "${fname}" && break
+      curl -f "http://koji.clearos.com/plaguefiles/source/${fsha}/${fname}" -o "${fname}"
     else
       echo "${fname} exists. skipping"
     fi
