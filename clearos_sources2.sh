@@ -75,7 +75,7 @@ while read -r fsha fname ; do
     fi
     if [ ! -e "${fname}" ]; then
       [ -z "${fsha}" ] && continue
-      curl -f "http://buildsys.clearfoundation.com/source/${fsha}/${fname}" -o "${fname}"
+      curl -f "http://koji.clearos.com/plaguefiles/source/${fsha}/${fname}" -o "${fname}" && break
     else
       echo "${fname} exists. skipping"
     fi
